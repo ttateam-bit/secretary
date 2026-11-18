@@ -745,7 +745,7 @@ function viewHome() {
   const undated = D.meetings.filter(m => m.kind === 'مرة واحدة' && !m.date);
   const groups = [];
   up.forEach(x => { const k = ymd(x.o.start); let g = groups.find(y => y.k === k); if (!g) groups.push(g = { k, list: [] }); g.list.push(x); });
-  const people = D.people.slice().sort((a, b) => (+a.order || 99) - (+b.order || 99));
+  const people = D.people.filter(p => p.home !== 'لا').sort((a, b) => (+a.order || 99) - (+b.order || 99));
 
   return `<div class="stack">
     <div class="card focus">
@@ -951,20 +951,17 @@ function viewSettings() {
   const secOpts = Object.keys(SECTIONS).map(k => `<option>${k}</option>`).join('');
   return `<div class="stack">
     <div class="card">
-      <h2 class="h2">${ic('users', 20)} الأشخاص والجهات (بطاقات الرئيسية)</h2>
-      <p class="sub">وسيلة التواصل: رقم بصيغة دولية (+964…) لواتساب، أو ‎@اسم_المستخدم لتلغرام، أو اتركها فارغة لتختار التطبيق عند كل رسالة. «شخص» = تُجمع بطاقته من الاتفاقات التي تحمل اسمه بالضبط. «قسم» = من كل اتفاقات القسم.</p><hr class="sep">
-      <div class="tblwrap"><table><thead><tr><th>الاسم</th><th>القسم</th><th>وسيلة التواصل</th><th>المطابقة</th><th></th></tr></thead><tbody>
-      ${D.people.slice().sort((a, b) => (+a.order || 99) - (+b.order || 99)).map(p => `<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.section)}</td>
-        <td><form data-form="person-phone" data-id="${p.id}" class="row" style="flex-wrap:nowrap"><input class="inp" name="phone" dir="ltr" value="${esc(p.phone || '')}" placeholder="+964… أو @تلغرام" style="width:160px;padding:4px 8px;font-size:12px"><button class="btn btn-ghost btn-sm" target="_self">حفظ</button></form></td>
-        <td>${esc(p.match)}</td>
-        <td><button class="btn-red" data-act="del-person" data-id="${p.id}" target="_self">حذف</button></td></tr>`).join('')}
-      </tbody></table></div>
-      <form data-form="add-person" class="row" style="margin-top:10px">
-        <input class="inp" name="name" placeholder="الاسم كما يُكتب في الاتفاقات" style="flex:2;min-width:160px" required>
-        <select class="inp" name="section" style="flex:1;min-width:130px">${secOpts}</select>
-        <select class="inp" name="match" style="width:90px"><option>شخص</option><option>قسم</option></select>
-        <button class="btn btn-navy btn-sm" target="_self">إضافة</button>
-      </form>
+      <div class="between"><h2 class="h2">${ic('users', 20)} جهات الاتصال والأشخاص</h2><button class="btn btn-navy btn-sm" data-act="new-person" target="_self">+ جهة اتصال</button></div>
+      <p class="sub">لكل شخص: واتساب (رقم دولي)، تلغرام (@اسم أو رقم)، بله (رقم)، والوسيلة المفضلة. «يظهر في الرئيسية» يضع بطاقته في الصفحة الأولى.</p>
+      <input class="inp" id="people-filter" placeholder="ابحث بالاسم أو الدور…" style="margin:10px 0">
+      <div class="cols" id="people-list">
+      ${D.people.slice().sort((a, b) => (a.home === 'لا') - (b.home === 'لا') || (+a.order || 99) - (+b.order || 99)).map(p => `
+        <div class="prop" data-person-card="${esc((p.name + ' ' + (p.role || '')).toLowerCase())}" style="margin:0">
+          <div class="between"><b>${esc(p.name)}</b><span class="row">${p.home === 'لا' ? '<span class="tag">جهة اتصال</span>' : '<span class="tag" style="color:var(--teal)">في الرئيسية</span>'}<button class="icon-btn" data-act="edit-person" data-id="${p.id}" target="_self">${ic('edit', 14)}</button></span></div>
+          <div class="small">${esc(p.role || p.section || '')}</div>
+          <div class="row" style="margin-top:6px">${channelsOf(p).map((c, i) => `<span class="chip ${i === 0 ? 'ok' : ''}">${CH_LABEL[c.kind]}: <span dir="ltr">${esc(c.value)}</span></span>`).join('') || '<span class="small">لا توجد وسيلة تواصل</span>'}</div>
+        </div>`).join('')}
+      </div>
     </div>
     <div class="card">
       <h2 class="h2">${ic('sparkle', 20)} الاستخراج الذكي (جيمناي)</h2>
@@ -1144,12 +1141,54 @@ function taskForm(x) {
     });
 }
 
+function personForm(p) {
+  const isNew = !p;
+  p = p || { name: '', section: '', match: 'شخص', phone: '', telegram: '', bale: '', preferred: '', role: '', home: 'لا' };
+  openModal(isNew ? 'جهة اتصال جديدة' : 'تعديل: ' + esc(p.name), `
+    <form id="f-person">
+      <div class="f2">
+        <div class="field"><label>الاسم (كما يُكتب في الاتفاقات)</label><input class="inp" name="name" value="${esc(p.name)}" required></div>
+        <div class="field"><label>الدور / ملاحظة</label><input class="inp" name="role" value="${esc(p.role || '')}" placeholder="مثال: مراجع عربي"></div>
+      </div>
+      <div class="f2">
+        <div class="field"><label>واتساب (رقم دولي)</label><input class="inp" name="phone" dir="ltr" value="${esc(p.phone || '')}" placeholder="+98…"></div>
+        <div class="field"><label>تلغرام (@اسم أو رقم)</label><input class="inp" name="telegram" dir="ltr" value="${esc(p.telegram || '')}" placeholder="@username"></div>
+      </div>
+      <div class="f2">
+        <div class="field"><label>بله (رقم)</label><input class="inp" name="bale" dir="ltr" value="${esc(p.bale || '')}" placeholder="+98…"></div>
+        <div class="field"><label>الوسيلة المفضلة</label><select class="inp" name="preferred"><option value="">تلقائي</option>${['whatsapp', 'telegram', 'bale'].map(k => `<option value="${k}" ${p.preferred === k ? 'selected' : ''}>${CH_LABEL[k]}</option>`).join('')}</select></div>
+      </div>
+      <div class="f2">
+        <div class="field"><label>القسم</label><select class="inp" name="section"><option value="">— عام —</option>${Object.keys(SECTIONS).map(k => `<option ${k === p.section ? 'selected' : ''}>${k}</option>`).join('')}</select></div>
+        <div class="field"><label>يظهر في الرئيسية؟</label><select class="inp" name="home"><option value="لا" ${p.home === 'لا' ? 'selected' : ''}>لا (جهة اتصال فقط)</option><option value="نعم" ${p.home !== 'لا' ? 'selected' : ''}>نعم (بطاقة متابعة)</option></select></div>
+      </div>
+      <div class="mfoot"><span>${isNew ? '' : `<button type="button" class="btn-red" id="person-del" target="_self">حذف</button>`}</span>
+        <span class="row"><button type="button" class="btn btn-ghost" data-act="close" target="_self">إلغاء</button><button class="btn btn-navy" target="_self">حفظ</button></span></div>
+    </form>`, el => {
+      const del = el.querySelector('#person-del');
+      if (del) del.onclick = () => confirmBox('حذف ' + p.name + '؟ (لا تُحذف اتفاقاته)').then(ok => ok && save([{ op: 'delete', table: 'people', id: p.id }], 'حُذف'));
+      el.querySelector('#f-person').onsubmit = e => {
+        e.preventDefault(); const f = e.target;
+        const order = p.order || Math.max(0, ...D.people.map(x => +x.order || 0)) + 1;
+        const row = Object.assign({}, p, { id: p.id || uid('p'), name: f.name.value.trim(), role: f.role.value.trim(), phone: f.phone.value.trim(), telegram: f.telegram.value.trim(),
+          bale: f.bale.value.trim(), preferred: f.preferred.value, section: f.section.value, home: f.home.value, match: p.match || 'شخص', order });
+        closeModal(); save([{ op: 'upsert', table: 'people', row }], 'حُفظ');
+      };
+    });
+}
+
+function msgPicker() {
+  waCompose('', 'السلام عليكم،\n', null);
+}
+
 function quickMenu() {
   openModal('إضافة جديد', `<div class="menu-grid">
     <button data-act="smart" target="_self"><span>${ic('mic', 26)}</span>كلّم سكرتيرك (صوت أو نص)</button>
     <button data-act="new-agr" target="_self"><span>${ic('handshake', 26)}</span>اتفاق مع شخص</button>
     <button data-act="new-meeting" target="_self"><span>${ic('cal', 26)}</span>موعد / اجتماع / تذكير</button>
     <button data-act="focus-task" target="_self"><span>${ic('list', 26)}</span>مهمة لليوم</button>
+    <button data-act="msg" target="_self"><span>${ic('send', 26)}</span>رسالة لشخص</button>
+    <button data-act="new-person" target="_self"><span>${ic('user', 26)}</span>جهة اتصال</button>
   </div>`);
 }
 
@@ -1192,7 +1231,7 @@ function secretaryContext() {
   return {
     today: t, weekday: DAYS[new Date().getDay()],
     sections: Object.keys(SECTIONS),
-    people: D.people.map(p => ({ id: p.id, name: p.name, section: p.section, hasPhone: !!p.phone })),
+    people: D.people.map(p => ({ id: p.id, name: p.name, role: p.role || '', section: p.section, channels: channelsOf(p).map(c => c.kind) })),
     agreements: activeAgr().map(a => ({ id: a.id, section: a.section, person: a.person, track: a.track, expected: a.expected,
       dueDate: a.dueDate, dueNote: a.dueNote, status: a.status, items: itemsOf(a.id).map(i => ({ id: i.id, text: i.text, done: !!i.done })) })),
     meetings: D.meetings.map(m => ({ id: m.id, title: m.title, person: m.person, section: m.section, kind: m.kind,
@@ -1226,8 +1265,8 @@ ${JSON.stringify(secretaryContext())}
 - {"type":"delete_meeting","id":""}
 - {"type":"add_book","title":"","owner":"","stage":"${STAGES.join('|')}"}
 - {"type":"update_book","id":"","fields":{"stage":"","owner":"","note":""}}
-- {"type":"add_person","name":"","section":"","match":"شخص|قسم","phone":""}
-- {"type":"update_person","id":"","fields":{"phone":"","name":"","section":""}}
+- {"type":"add_person","name":"","role":"","section":"","phone":"واتساب","telegram":"@اسم أو رقم","bale":"","preferred":"whatsapp|telegram|bale","home":"نعم|لا"}
+- {"type":"update_person","id":"","fields":{"phone":"","telegram":"","bale":"","preferred":"","role":"","name":"","section":"","home":""}}
 - {"type":"message","person":"اسم الشخص كما في السجل","message":"نص الرسالة كاملاً"}   ← حين يطلب كتابة رسالة لأحد (تُرسل بواتساب أو تلغرام حسب الشخص)
 
 القواعد:
@@ -1362,10 +1401,11 @@ function actionsToOps(actions) {
       case 'update_book': { const x = findIn(W, 'books', a.id); if (!x) break; const f = pickFields(a.fields, ['title', 'owner', 'stage', 'note']); if (f.stage && !STAGES.includes(f.stage)) delete f.stage; put('books', Object.assign({}, x, f, { updatedAt: nowIso() })); break; }
       case 'add_person': {
         const order = Math.max(0, ...W.people.map(p => +p.order || 0)) + 1;
-        put('people', { id: uid('p'), name: String(a.name || '').trim(), section: secOk(a.section) || 'الإدارة', match: a.match === 'قسم' ? 'قسم' : 'شخص', order, phone: a.phone || '' });
+        put('people', { id: uid('p'), name: String(a.name || '').trim(), section: secOk(a.section) || '', match: a.match === 'قسم' ? 'قسم' : 'شخص', order,
+          phone: a.phone || '', telegram: a.telegram || '', bale: a.bale || '', preferred: ['whatsapp', 'telegram', 'bale'].includes(a.preferred) ? a.preferred : '', role: a.role || '', home: a.home === 'نعم' ? 'نعم' : 'لا' });
         break;
       }
-      case 'update_person': { const x = findIn(W, 'people', a.id); if (!x) break; put('people', Object.assign({}, x, pickFields(a.fields, ['name', 'section', 'phone', 'match']))); break; }
+      case 'update_person': { const x = findIn(W, 'people', a.id); if (!x) break; put('people', Object.assign({}, x, pickFields(a.fields, ['name', 'section', 'phone', 'telegram', 'bale', 'preferred', 'role', 'home', 'match']))); break; }
     }
   });
   touchedAgr.forEach(aid => {
@@ -1427,7 +1467,7 @@ function showProposals(p) {
       ${acts.map((a, k) => `<label class="prop row" style="align-items:flex-start"><input type="checkbox" checked data-act-k="${k}" style="margin-top:4px"> <div style="flex:1">${describeAction(a)}</div></label>`).join('')}
       <div class="mfoot"><span></span><button class="btn btn-teal" id="cap-apply" target="_self">${ic('check', 15)} اعتماد المحدد</button></div>` : ''}
     ${was.map((w, k) => `<div class="prop" style="background:#eefaf3;border-color:#bfe6cf">
-      <div class="small"><b>رسالة إلى ${esc(w.person)}</b> — ${({ whatsapp: 'واتساب', telegram: 'تلغرام', none: 'تختار التطبيق' })[contactKind(contactOf(w.person))]}</div>
+      <div class="small"><b>رسالة إلى ${esc(w.person)}</b> — ${(c => c ? CH_LABEL[c.kind] : 'تختار التطبيق')(channelsOf(personOf(w.person))[0])}</div>
       <textarea class="inp" rows="4" data-wa-k="${k}" style="margin-top:6px">${esc(w.message)}</textarea>
       <div class="row" style="margin-top:6px"><button class="btn btn-teal btn-sm" data-wa-open="${k}" target="_self">${ic('send', 13)} إرسال…</button><button class="btn btn-ghost btn-sm" data-wa-copy="${k}" target="_self">${ic('copy', 13)} نسخ</button></div>
     </div>`).join('')}
@@ -1448,40 +1488,60 @@ function showProposals(p) {
 /* =====================================================================
    واتساب
    ===================================================================== */
-function contactOf(name) {
+function personOf(name) {
   const n = String(name || '').trim();
-  const p = D.people.find(x => x.name === n) || D.people.find(x => n && (x.name.includes(n) || n.includes(x.name)) && x.match === 'شخص');
-  return p && p.phone ? String(p.phone).trim() : '';
+  if (!n) return null;
+  return D.people.find(x => x.name === n) || D.people.find(x => x.name.includes(n) || n.includes(x.name)) || null;
 }
-// «@اسم» أو رابط t.me = تلغرام، والأرقام = واتساب، والفارغ = اختيار التطبيق عند الإرسال
+const digits = v => { let d = String(v || '').replace(/[^\d+]/g, ''); if (d.startsWith('+')) d = d.slice(1); else if (d.startsWith('00')) d = d.slice(2); return d; };
+const CH_LABEL = { whatsapp: 'واتساب', telegram: 'تلغرام', bale: 'بله' };
+// قائمة وسائل الشخص، والمفضلة أولاً
+function channelsOf(p) {
+  if (!p) return [];
+  const list = [];
+  if (p.phone) list.push({ kind: 'whatsapp', value: p.phone });
+  if (p.telegram) list.push({ kind: 'telegram', value: p.telegram });
+  if (p.bale) list.push({ kind: 'bale', value: p.bale });
+  const pref = p.preferred && list.find(c => c.kind === p.preferred);
+  return pref ? [pref].concat(list.filter(c => c !== pref)) : list;
+}
+const contactOf = name => { const c = channelsOf(personOf(name))[0]; return c ? c.value : ''; };
 function contactKind(c) {
   if (!c) return 'none';
   if (/^@|t\.me\//i.test(c)) return 'telegram';
-  if (/\d{6,}/.test(c.replace(/\D/g, ''))) return 'whatsapp';
-  return 'none';
+  return /\d{6,}/.test(digits(c)) ? 'whatsapp' : 'none';
 }
-function waLink(phone, text) {
-  let d = String(phone || '').replace(/[^\d+]/g, '');
-  if (d.startsWith('+')) d = d.slice(1); else if (d.startsWith('00')) d = d.slice(2);
-  return 'https://wa.me/' + d + '?text=' + encodeURIComponent(text || '');
+function waLink(phone, text) { return 'https://wa.me/' + digits(phone) + '?text=' + encodeURIComponent(text || ''); }
+function tgLink(v) {
+  v = String(v || '').trim();
+  if (/t\.me\//i.test(v)) return 'https://t.me/' + v.replace(/^.*t\.me\//i, '');
+  if (v.startsWith('@')) return 'https://t.me/' + v.slice(1);
+  return 'https://t.me/+' + digits(v);
 }
 function openUrl(u) {
   const a = document.createElement('a'); a.href = u; a.target = '_blank'; a.rel = 'noopener';
   document.body.appendChild(a); a.click(); a.remove();
 }
+async function copySilently(text) { try { await navigator.clipboard.writeText(text); return true; } catch (e) { return false; } }
 async function shareText(text) {
   if (navigator.share) { try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
   copyText(text);
 }
-async function openMessage(person, text, via) {
-  const c = contactOf(person), kind = via || contactKind(c);
-  if (kind === 'whatsapp') { openUrl(waLink(c, text)); return; }
-  if (kind === 'whatsapp-pick') { openUrl('https://wa.me/?text=' + encodeURIComponent(text)); return; }
-  if (kind === 'telegram') {
-    try { await navigator.clipboard.writeText(text); } catch (e) {}
-    const user = c.replace(/^.*t\.me\//i, '').replace(/^@/, '');
+// via: whatsapp | telegram | bale | share | whatsapp-pick ؛ value: الرقم أو الاسم المستخدم
+async function openMessage(person, text, via, value) {
+  if (!via) { const c = channelsOf(personOf(person))[0]; via = c ? c.kind : 'share'; value = c ? c.value : ''; }
+  if (via === 'whatsapp') { openUrl(waLink(value, text)); return; }
+  if (via === 'whatsapp-pick') { openUrl('https://wa.me/?text=' + encodeURIComponent(text)); return; }
+  if (via === 'telegram') {
+    await copySilently(text);
     toast('✓ نُسخت الرسالة — الصقها في محادثة تلغرام');
-    openUrl(user ? 'https://t.me/' + user : 'https://t.me/share/url?url=' + encodeURIComponent(text));
+    openUrl(value ? tgLink(value) : 'https://t.me/share/url?url=' + encodeURIComponent(text));
+    return;
+  }
+  if (via === 'bale') {
+    await copySilently(text);
+    toast('✓ نُسخت الرسالة — اختر «بله» ثم الصقها');
+    shareText(text);
     return;
   }
   shareText(text);
@@ -1489,9 +1549,9 @@ async function openMessage(person, text, via) {
 const openWhatsApp = (person, text) => openMessage(person, text);
 
 function waTemplateAgr(a) {
-  const first = String(a.person || '').split(/[\s،]/)[0];
   const rest = itemsOf(a.id).filter(i => !i.done).map(i => '• ' + i.text);
-  return `السلام عليكم ${first ? 'أخي ' + a.person : ''}،\nتذكير لطيف بما اتفقنا عليه: ${a.expected}` +
+  const hon = /^(الشيخ|الحاج|السيد|آقاي|اقاى|الأستاذ|أستاذ|الدكتور)/.test(a.person || '') ? '' : 'أخي ';
+  return `السلام عليكم ${a.person ? hon + a.person : ''}،\nتذكير لطيف بما اتفقنا عليه: ${a.expected}` +
     (rest.length ? `\nالمتبقي:\n${rest.join('\n')}` : '') + (a.dueDate ? `\nالموعد: ${fmtDay(a.dueDate)}` : '') + `\nبارك الله فيك.`;
 }
 function waTemplateMeet(m) {
@@ -1501,28 +1561,35 @@ function waTemplateMeet(m) {
 }
 
 function waCompose(person, draft, aiPrompt) {
-  const c = contactOf(person), kind = contactKind(c);
-  const who = kind === 'whatsapp' ? `واتساب <span dir="ltr">(${esc(c)})</span>` : kind === 'telegram' ? `تلغرام <span dir="ltr">(${esc(c)})</span>` : 'لا توجد وسيلة محفوظة — اختر التطبيق عند الإرسال (تُضاف من الإعدادات)';
+  const p = personOf(person), chs = channelsOf(p);
+  const many = String(person || '').split(/[،,]/).map(x => x.trim()).filter(Boolean);
   openModal(ic('send', 18) + ' رسالة', `
-    <div class="small">إلى: <b>${esc(person)}</b> — ${who}</div>
+    <div class="field"><label>إلى</label>
+      <input class="inp" id="wa-to" list="dl-people" value="${esc(many.length > 1 ? '' : (p ? p.name : person))}" placeholder="${many.length > 1 ? 'اختر: ' + esc(many.join(' / ')) : 'اسم الشخص'}">${peopleList()}
+    </div>
+    <div class="small" id="wa-role">${p && p.role ? esc(p.role) : ''}</div>
     <textarea class="inp" id="wa-text" rows="7" style="margin-top:8px">${esc(draft)}</textarea>
-    <div class="row" style="margin-top:8px">
-      ${kind === 'whatsapp' ? `<button class="btn btn-teal" data-send="whatsapp" target="_self">${ic('send', 15)} فتح في واتساب</button>` : ''}
-      ${kind === 'telegram' ? `<button class="btn btn-teal" data-send="telegram" target="_self">${ic('send', 15)} فتح في تلغرام</button>` : ''}
-      <button class="btn ${kind === 'none' ? 'btn-teal' : 'btn-ghost'}" data-send="share" target="_self">${ic('ext', 15)} مشاركة عبر تطبيق…</button>
-      ${kind !== 'whatsapp' ? `<button class="btn btn-ghost" data-send="whatsapp-pick" target="_self">واتساب</button>` : ''}
-      <button class="btn btn-ghost" id="wa-copy" target="_self">${ic('copy', 15)} نسخ</button>
-      ${aiPrompt && D.settings && D.settings.hasKey ? `<button class="btn btn-ghost" id="wa-ai" target="_self">${ic('sparkle', 15)} صياغة بجيمناي</button>` : ''}
+    <div class="row" id="wa-btns" style="margin-top:8px"></div>
+    <div class="row" style="margin-top:6px">
+      <button class="btn btn-ghost btn-sm" id="wa-copy" target="_self">${ic('copy', 13)} نسخ</button>
+      ${aiPrompt && D.settings && D.settings.hasKey ? `<button class="btn btn-ghost btn-sm" id="wa-ai" target="_self">${ic('sparkle', 13)} صياغة بجيمناي</button>` : ''}
     </div>
     <p class="small" style="margin-top:8px">لن تُرسل الرسالة إلا حين تضغط «إرسال» بنفسك داخل التطبيق.</p>`, el => {
-      el.querySelectorAll('[data-send]').forEach(b => b.onclick = () => openMessage(person, $('#wa-text').value, b.dataset.send === 'share' ? 'none' : b.dataset.send));
+      const drawBtns = () => {
+        const who = personOf($('#wa-to').value), list = channelsOf(who);
+        $('#wa-role').textContent = who && who.role ? who.role : (who ? '' : 'لا توجد وسيلة محفوظة لهذا الاسم — اختر التطبيق عند الإرسال.');
+        $('#wa-btns').innerHTML = list.map((c, i) => `<button class="btn ${i === 0 ? 'btn-teal' : 'btn-ghost'} btn-sm" data-via="${c.kind}" data-val="${esc(c.value)}" target="_self">${ic('send', 13)} ${CH_LABEL[c.kind]}${i === 0 && list.length > 1 ? ' (المفضلة)' : ''}</button>`).join('') +
+          `<button class="btn ${list.length ? 'btn-ghost' : 'btn-teal'} btn-sm" data-via="share" target="_self">${ic('ext', 13)} مشاركة عبر تطبيق…</button>`;
+        $('#wa-btns').querySelectorAll('[data-via]').forEach(b => b.onclick = () => openMessage($('#wa-to').value, $('#wa-text').value, b.dataset.via, b.dataset.val || ''));
+      };
+      $('#wa-to').oninput = drawBtns; drawBtns();
       el.querySelector('#wa-copy').onclick = () => copyText($('#wa-text').value);
       const ai = el.querySelector('#wa-ai');
       if (ai) ai.onclick = () => {
         ai.disabled = true; ai.innerHTML = '⏳ يصوغ…';
         api.aiCall(aiPrompt).then(raw => { const j = JSON.parse(String(raw).replace(/^```(?:json)?/i, '').replace(/```$/, '').trim()); if (j.message) $('#wa-text').value = j.message; })
           .catch(e => toast('⚠️ ' + (e.message || e)))
-          .finally(() => { ai.disabled = false; ai.innerHTML = ic('sparkle', 15) + ' صياغة بجيمناي'; });
+          .finally(() => { ai.disabled = false; ai.innerHTML = ic('sparkle', 13) + ' صياغة بجيمناي'; });
       };
     });
 }
@@ -1564,6 +1631,9 @@ document.addEventListener('click', e => {
     case 'close': closeModal(); break;
     case 'quick': quickMenu(); break;
     case 'sections': sectionsSheet(); break;
+    case 'new-person': personForm(null); break;
+    case 'edit-person': personForm(D.people.find(x => x.id === id)); break;
+    case 'msg': msgPicker(); break;
     case 'wa-agr': {
       const a = D.agreements.find(x => x.id === id); const rest = itemsOf(a.id).filter(i => !i.done).map(i => '- ' + i.text).join('\n');
       waCompose(a.person, waTemplateAgr(a), waAiPrompt(a.person, `الاتفاق: ${a.expected}\nالمتبقي:\n${rest || '(لا بنود)'}\n${a.dueDate ? 'الموعد: ' + fmtDay(a.dueDate) : ''}`));
@@ -1647,6 +1717,12 @@ document.addEventListener('submit', e => {
   } else if (kind === 'gemini') {
     const k = f.key.value.trim(), m = f.model.value.trim();
     api.setGeminiKey(k, m).then(s => { D.settings = s; render(); toast('✓ حُفظت إعدادات جيمناي'); }).catch(err => toast('⚠️ ' + err));
+  }
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'people-filter') {
+    const q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll('[data-person-card]').forEach(c => { c.style.display = !q || c.dataset.personCard.includes(q) ? '' : 'none'; });
   }
 });
 $('#overlay').addEventListener('click', e => { if (e.target.id === 'overlay') closeModal(); });
