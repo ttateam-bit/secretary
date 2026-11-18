@@ -44,7 +44,7 @@
   .tab.on{background:var(--teal);color:#fff;box-shadow:0 2px 8px rgba(0,145,142,.25)}
   .tab .dot{display:inline-block;min-width:18px;padding:0 5px;margin-inline-start:4px;border-radius:9px;background:var(--crimson);color:#fff;font-size:11px;line-height:18px;text-align:center}
 
-  main{padding:18px 0 90px}
+  main.wrap{padding-top:18px;padding-bottom:90px}
   .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:0 1px 2px rgba(11,32,73,.04)}
   .stack>*+*{margin-top:16px}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -216,8 +216,8 @@
   .strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
   @media (max-width:900px){.strip{grid-template-columns:1fr 1fr}}
   @media (max-width:640px){
-    .strip{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;margin:0 -16px;padding-inline:16px}
-    .strip .pbox{flex:0 0 78%;scroll-snap-align:start}
+    .strip{display:grid;grid-template-columns:1fr;gap:10px}
+    .strip .pbox{min-width:0}
   }
   .add-toggle{font-size:12px;font-weight:700;color:var(--teal);margin-top:6px;display:inline-flex;align-items:center;gap:4px}
   .addline.hide{display:none}
@@ -232,12 +232,12 @@
     .top>div:first-child{min-width:0;flex:1}
     .top h1{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .qlinks{flex-wrap:nowrap}
-    main{padding-top:14px}
+    main.wrap{padding-top:14px}
     .top p{display:none}
     .qlinks a span{display:none}
     .qlinks a{padding:7px 9px}
     .fab{display:none}
-    main{padding-bottom:96px}
+    main.wrap{padding-bottom:calc(120px + env(safe-area-inset-bottom))}
     .bnav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);z-index:45;padding:6px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -4px 14px rgba(11,32,73,.06)}
     .bnav button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:700;color:var(--muted);padding:4px 0;position:relative}
     .bnav button.on{color:var(--teal)}
@@ -245,6 +245,13 @@
     .bnav .dot{position:absolute;top:0;right:calc(50% - 18px);min-width:16px;height:16px;border-radius:8px;background:var(--crimson);color:#fff;font-size:10px;line-height:16px;text-align:center}
     #toast{bottom:84px}
   }
+  .note{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:var(--ivory)}
+  .note.dec{border-color:#e7c873;background:#fffaeb}
+  .note-t{margin:6px 0 4px;line-height:1.8;font-size:14px}
+  .tag-dec{background:#f6e3a8!important;color:#6b4e00!important}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:20px;padding:5px 12px;font-size:13px;font-weight:700}
+  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
   .sec-list{display:grid;gap:8px}
   .sec-list button{display:flex;align-items:center;gap:12px;padding:13px 14px;border:1px solid var(--line);border-radius:14px;background:var(--ivory);font-weight:800;font-size:15px;text-align:right}
   .sec-list button.on{border-color:var(--teal);background:var(--teal-soft)}
@@ -330,23 +337,24 @@ const TABS = [
   { id: 'home', icon: 'home', label: 'الرئيسية' },
   { id: 'admin', icon: 'admin', label: 'الإدارة', title: 'الإدارة — الشيخ صادق والحاج إيمان',
     sub: 'الاتفاقات القيادية: على ماذا اتفقنا؟ وماذا تم البتّ فيه؟', sections: ['الإدارة'],
-    links: [['folder', 'مجلد الإدارة', 'https:\/\/drive.google.com/drive/folders/1njXubFC-kr_QUgDKaI2KNBM4J5UssnaT']] },
+    links: [['folder', 'مجلد الإدارة (ارفع فيه الملفات)', 'https:\/\/drive.google.com/drive/folders/1njXubFC-kr_QUgDKaI2KNBM4J5UssnaT']] },
   { id: 'site', icon: 'globe', label: 'فريق السايت', title: 'فريق السايت — محمد باقر ش وزين ض',
     sub: 'المسارات: التعلّم، إنجاز الموقع، الذكاء الاصطناعي. الاجتماع كل ثلاثاء 6:30–8:00 مساءً.', sections: ['فريق السايت'],
     links: [['note', 'محضر 2026-11-17', 'https:\/\/docs.google.com/document/d/13hOecMZqe0LM238Ojs_89L3xiYxTRcO8slCQ5p7Rro0/edit'],
-            ['folder', 'مجلد فريق السايت', 'https:\/\/drive.google.com/drive/folders/1nUVRr5ZYDTikihGlVLSAPxPZmHD1mnhs']] },
+            ['folder', 'مجلد فريق السايت (ارفع فيه الملفات)', 'https:\/\/drive.google.com/drive/folders/1nUVRr5ZYDTikihGlVLSAPxPZmHD1mnhs']] },
   { id: 'books', icon: 'book', label: 'مشروع الكتب', title: 'مشروع الكتب — أين أصبح كل كتاب؟',
     sub: 'مرحلة كل كتاب، والاتفاقات الفردية مع فريق التحرير والترجمة.', sections: ['مشروع الكتب'],
-    links: [['folder', 'مجلد مشروع الكتب', 'https:\/\/drive.google.com/drive/folders/1tkKry4HTbPE-VL7p_sZ2bjJWYT4s-pdr']] },
+    links: [['folder', 'مجلد مشروع الكتب (ارفع فيه الملفات)', 'https:\/\/drive.google.com/drive/folders/1tkKry4HTbPE-VL7p_sZ2bjJWYT4s-pdr']] },
   { id: 'social', icon: 'phone', label: 'السوشيال ميديا', title: 'السوشيال ميديا — المستشار ومسؤوليتي الشخصية',
     sub: 'فصل واضح بين ما اتفقنا عليه مع المستشار، وما أنفّذه شخصياً.', sections: ['مستشار السوشيال', 'محتواي الشخصي'],
     links: [['sheet', 'حسابات فريق السوشيال', 'https:\/\/docs.google.com/spreadsheets/d/14ycOe4KeUSqFm0XlJV__ckTv_6zxsdpmb9_PDd1falQ/edit'],
-            ['folder', 'مجلد السوشيال', 'https:\/\/drive.google.com/drive/folders/1c7-9QysgEz0W8DDOH1A5E6Pg02_JAkJo']] },
+            ['folder', 'مجلد السوشيال (ارفع فيه الملفات)', 'https:\/\/drive.google.com/drive/folders/1c7-9QysgEz0W8DDOH1A5E6Pg02_JAkJo']] },
   { id: 'afshari', icon: 'compass', label: 'أفشاري', title: 'مستشار التسويق الإلكتروني (أفشاري)',
     sub: 'توثيق جلسات الاستشارة في السايت والسوشيال والإدارة — بدون مهام تنفيذية مسندة له.', sections: ['أفشاري'],
-    links: [['folder', 'مجلد أفشاري', 'https:\/\/drive.google.com/drive/folders/1uoKWHJZw4nqeBvmzT04YTPj-R0D4N5Mp']] },
+    links: [['folder', 'مجلد أفشاري (ارفع فيه الملفات)', 'https:\/\/drive.google.com/drive/folders/1uoKWHJZw4nqeBvmzT04YTPj-R0D4N5Mp']] },
   { id: 'personal', icon: 'user', label: 'شخصي', title: 'مواعيدي والتزاماتي الشخصية',
     sub: 'الدورات والمواعيد الخاصة بك خارج فرق مدرسة الوحي.', sections: ['شخصي'], links: [] },
+  { id: 'notes', icon: 'note', label: 'الملاحظات والقرارات' },
   { id: 'review', icon: 'chart', label: 'المراجعة الأسبوعية' },
   { id: 'settings', icon: 'gear', label: 'الإعدادات' }
 ];
@@ -388,7 +396,7 @@ const Mock = {
   KEY: 'mw_secretary_preview',
   load() {
     try { const r = localStorage.getItem(this.KEY); if (r) return JSON.parse(r); } catch (e) {}
-    const s = JSON.parse(JSON.stringify(window.__SEED || { people: [], agreements: [], items: [], meetings: [], tasks: [], books: [] }));
+    const s = JSON.parse(JSON.stringify(window.__SEED || { people: [], agreements: [], items: [], meetings: [], tasks: [], books: [], notes: [] }));
     s.settings = { hasKey: false, model: 'gemini-flash-latest' };
     return s;
   },
@@ -706,7 +714,62 @@ function sectionsSheet() {
     const open = activeAgr().filter(a => t.sections.includes(a.section) && isOpen(a)).length;
     const late = activeAgr().filter(a => t.sections.includes(a.section) && isLate(a)).length;
     return `<button class="${t.id === TAB ? 'on' : ''}" data-tab="${t.id}" target="_self">${ic(t.icon, 22)}<span>${t.label}<small>${open ? ar(open) + ' اتفاق مفتوح' : 'لا شيء مفتوح'}</small></span>${late ? `<span class="n">${ar(late)} متأخر</span>` : ''}</button>`;
-  }).join('')}</div>`);
+  }).join('')}
+    <button class="${TAB === 'notes' ? 'on' : ''}" data-tab="notes" target="_self">${ic('note', 22)}<span>الملاحظات والقرارات<small>${ar((D.notes || []).length)} مدوَّنة</small></span></button></div>`);
+}
+
+/* ====== الملاحظات والقرارات ====== */
+let NOTE_FILTER = 'الكل';
+function notesSorted(sections) {
+  return (D.notes || []).filter(n => !sections || sections.includes(n.section))
+    .sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.id || '').localeCompare(a.id || ''));
+}
+function noteRow(n, showSec) {
+  const dec = n.kind === 'قرار';
+  return `<div class="note ${dec ? 'dec' : ''}">
+    <div class="between"><span class="row" style="gap:6px"><span class="tag ${dec ? 'tag-dec' : ''}">${dec ? '⚖️ قرار' : '📝 ملاحظة'}</span>
+      <span class="small">${n.date ? relDay(n.date) : ''}${showSec && n.section ? ' • ' + esc(n.section) : ''}${n.person ? ' • ' + esc(n.person) : ''}</span></span>
+      <span class="row" style="gap:2px"><button class="icon-btn" data-act="edit-note" data-id="${n.id}" target="_self">${ic('edit', 14)}</button></span></div>
+    <div class="note-t">${esc(n.text).replace(/\n/g, '<br>')}</div>
+    ${n.link ? `<a class="link" href="${esc(n.link)}" target="_blank" rel="noopener">${ic('folder', 13)} فتح المرفق</a>` : ''}
+  </div>`;
+}
+function notesCard(sections) {
+  const list = notesSorted(sections);
+  return `<div class="card"><div class="between"><h3 class="h3">${ic('note')} الملاحظات والقرارات</h3>
+    <button class="link" data-act="new-note" data-section="${esc(sections[0])}" target="_self">+ ملاحظة / قرار</button></div><hr class="sep">
+    ${list.length ? list.slice(0, 5).map(n => noteRow(n, sections.length > 1)).join('') + (list.length > 5 ? `<button class="link" data-act="notes-of" data-section="${esc(sections[0])}" target="_self">عرض الكل (${ar(list.length)}) ←</button>` : '')
+      : '<div class="empty">لا ملاحظات بعد. سجّل هنا ما يُقرَّر في الاجتماعات أو ما تريد تذكّره.</div>'}</div>`;
+}
+function viewNotes() {
+  const secs = Object.keys(SECTIONS);
+  const list = notesSorted(NOTE_FILTER === 'الكل' ? null : (NOTE_FILTER === 'القرارات' ? null : [NOTE_FILTER]))
+    .filter(n => NOTE_FILTER !== 'القرارات' || n.kind === 'قرار');
+  return `<div class="stack"><div class="card between">
+      <div><h2 class="h2">${ic('note', 20)} الملاحظات والقرارات</h2><p class="sub">كل ما دُوِّن أو أُقرّ، الأحدث أولاً. يمكن لجيمناي أن يضيف هنا ملخّص أي اجتماع.</p></div>
+      <button class="btn btn-navy btn-sm" data-act="new-note" target="_self">+ ملاحظة / قرار</button></div>
+    <div class="chips">${['الكل', 'القرارات', ...secs].map(x => `<button class="chip ${x === NOTE_FILTER ? 'on' : ''}" data-act="note-filter" data-id="${esc(x)}" target="_self">${esc(x)}</button>`).join('')}</div>
+    <div class="card">${list.length ? list.map(n => noteRow(n, true)).join('') : '<div class="empty">لا شيء هنا بعد.</div>'}</div></div>`;
+}
+function noteForm(n, presetSection) {
+  const isNew = !n; n = n || { date: today(), section: presetSection || '', person: '', kind: 'ملاحظة', text: '', link: '' };
+  openModal(isNew ? 'ملاحظة / قرار جديد' : 'تعديل', `<form id="f-note">
+    <div class="f2"><div class="field"><label>النوع</label><select class="inp" name="kind">${['ملاحظة', 'قرار'].map(k => `<option ${k === n.kind ? 'selected' : ''}>${k}</option>`).join('')}</select></div>
+      <div class="field"><label>التاريخ</label><input class="inp" type="date" name="date" value="${esc(n.date)}"></div></div>
+    <div class="f2"><div class="field"><label>الفريق</label><select class="inp" name="section">${Object.keys(SECTIONS).map(k => `<option ${k === n.section ? 'selected' : ''}>${k}</option>`).join('')}</select></div>
+      <div class="field"><label>الشخص (اختياري)</label><input class="inp" name="person" value="${esc(n.person)}" list="dl-people"></div></div>
+    <datalist id="dl-people">${D.people.map(p => `<option value="${esc(p.name)}">`).join('')}</datalist>
+    <div class="field"><label>النص</label><textarea class="inp" name="text" rows="5" required>${esc(n.text)}</textarea></div>
+    <div class="field"><label>رابط مرفق (تسجيل صوتي أو ملف في درايف — اختياري)</label><input class="inp" name="link" dir="ltr" value="${esc(n.link)}" placeholder="https://drive.google.com/..."></div>
+    <div class="mfoot">${isNew ? '<span></span>' : `<button type="button" class="btn btn-ghost" style="color:var(--crimson)" data-act="del-note" data-id="${n.id}" target="_self">حذف</button>`}
+      <span class="row"><button type="button" class="btn btn-ghost" data-act="close" target="_self">إلغاء</button><button class="btn btn-navy" target="_self">حفظ</button></span></div>
+  </form>`, el => {
+    el.querySelector('#f-note').onsubmit = e => {
+      e.preventDefault(); const f = e.target; closeModal();
+      const row = Object.assign({}, n, { id: n.id || uid('n'), kind: f.kind.value, date: f.date.value, section: f.section.value, person: f.person.value.trim(), text: f.text.value.trim(), link: f.link.value.trim() });
+      save([{ op: 'upsert', table: 'notes', row }], 'حُفظت');
+    };
+  });
 }
 
 function render() {
@@ -716,6 +779,7 @@ function render() {
   let html = '';
   if (TAB === 'home') html = viewHome();
   else if (TAB === 'review') html = viewReview();
+  else if (TAB === 'notes') html = viewNotes();
   else if (TAB === 'settings') html = viewSettings();
   else html = viewSection(t);
   $('#view').className = '';
@@ -865,6 +929,8 @@ function viewSection(t) {
     html += `<div class="card"><div class="between"><h3 class="h3">${ic('cal')} مواعيد هذا القسم</h3><button class="link" data-act="new-meeting" data-section="${esc(t.sections[0])}" target="_self">+ اجتماع</button></div><hr class="sep">
       <div class="cols">${meets.map(m => meetingCard(m)).join('')}</div></div>`;
   }
+
+  html += notesCard(t.sections);
 
   if (t.id === 'books') {
     html += `<div class="card"><div class="between"><h3 class="h3">${ic('book')} قائمة الكتب: كل كتاب أين أصبح؟</h3><button class="btn btn-sm btn-ghost" data-act="new-book" target="_self">+ كتاب</button></div><hr class="sep">
@@ -1189,6 +1255,7 @@ function quickMenu() {
     <button data-act="focus-task" target="_self"><span>${ic('list', 26)}</span>مهمة لليوم</button>
     <button data-act="msg" target="_self"><span>${ic('send', 26)}</span>رسالة لشخص</button>
     <button data-act="new-person" target="_self"><span>${ic('user', 26)}</span>جهة اتصال</button>
+    <button data-act="new-note" target="_self"><span>${ic('note', 26)}</span>ملاحظة / قرار</button>
   </div>`);
 }
 
@@ -1237,7 +1304,8 @@ function secretaryContext() {
     meetings: D.meetings.map(m => ({ id: m.id, title: m.title, person: m.person, section: m.section, kind: m.kind,
       weekday: m.weekday, date: m.date, start: m.start, end: m.end, prep: m.prep })),
     tasks: D.tasks.filter(x => !x.done || x.date === t).map(x => ({ id: x.id, title: x.title, date: x.date, done: !!x.done })),
-    books: D.books.map(b => ({ id: b.id, title: b.title, owner: b.owner, stage: b.stage }))
+    books: D.books.map(b => ({ id: b.id, title: b.title, owner: b.owner, stage: b.stage })),
+    notes: notesSorted(null).slice(0, 20).map(n => ({ id: n.id, date: n.date, section: n.section, kind: n.kind, text: n.text }))
   };
 }
 
@@ -1267,6 +1335,7 @@ ${JSON.stringify(secretaryContext())}
 - {"type":"update_book","id":"","fields":{"stage":"","owner":"","note":""}}
 - {"type":"add_person","name":"","role":"","section":"","phone":"واتساب","telegram":"@اسم أو رقم","bale":"","preferred":"whatsapp|telegram|bale","home":"نعم|لا"}
 - {"type":"update_person","id":"","fields":{"phone":"","telegram":"","bale":"","preferred":"","role":"","name":"","section":"","home":""}}
+- {"type":"add_note","kind":"ملاحظة|قرار","section":"","person":"","text":"","link":""}   ← حين يقول «دوّن/سجّل ملاحظة» أو يذكر قراراً أُقرّ
 - {"type":"message","person":"اسم الشخص كما في السجل","message":"نص الرسالة كاملاً"}   ← حين يطلب كتابة رسالة لأحد (تُرسل بواتساب أو تلغرام حسب الشخص)
 
 القواعد:
@@ -1330,6 +1399,7 @@ function describeAction(a) {
     case 'delete_meeting': return `<span style="color:var(--crimson)">🗑 حذف موعد: ${esc(mt(a.id).title || a.id)}</span>`;
     case 'add_book': return `${ic('book', 14)} كتاب جديد: ${esc(a.title)} (${esc(a.stage || STAGES[0])})`;
     case 'update_book': return `${ic('book', 14)} «${esc(bk(a.id).title || a.id)}» ← ${fl(a.fields)}`;
+    case 'add_note': return `${ic('note', 14)} ${a.kind === 'قرار' ? '⚖️ قرار' : '📝 ملاحظة'} <span class="tag">${esc(a.section || '')}</span>: ${esc(a.text)}`;
     case 'add_person': return `${ic('user', 14)} شخص جديد: ${esc(a.name)} (${esc(a.section)})`;
     case 'update_person': return `${ic('user', 14)} تعديل بيانات ${esc((D.people.find(p => p.id === a.id) || {}).name || a.id)} ← ${fl(a.fields)}`;
     default: return `فعل غير معروف (${esc(a.type)}) — سيُتجاهل`;
@@ -1399,6 +1469,7 @@ function actionsToOps(actions) {
       case 'delete_meeting': if (findIn(W, 'meetings', a.id)) del('meetings', a.id); break;
       case 'add_book': put('books', { id: uid('b'), title: String(a.title || ''), owner: a.owner || '', stage: STAGES.includes(a.stage) ? a.stage : STAGES[0], note: a.note || '', updatedAt: nowIso() }); break;
       case 'update_book': { const x = findIn(W, 'books', a.id); if (!x) break; const f = pickFields(a.fields, ['title', 'owner', 'stage', 'note']); if (f.stage && !STAGES.includes(f.stage)) delete f.stage; put('books', Object.assign({}, x, f, { updatedAt: nowIso() })); break; }
+      case 'add_note': if (String(a.text || '').trim()) put('notes', { id: uid('n'), date: today(), section: secOk(a.section) || '', person: a.person || '', kind: a.kind === 'قرار' ? 'قرار' : 'ملاحظة', text: String(a.text).trim(), link: a.link || '' }); break;
       case 'add_person': {
         const order = Math.max(0, ...W.people.map(p => +p.order || 0)) + 1;
         put('people', { id: uid('p'), name: String(a.name || '').trim(), section: secOk(a.section) || '', match: a.match === 'قسم' ? 'قسم' : 'شخص', order,
@@ -1646,6 +1717,11 @@ document.addEventListener('click', e => {
     }
     case 'show-add': { const f = document.querySelector(`[data-form="add-item"][data-id="${id}"]`); el.style.display = 'none'; f.classList.remove('hide'); f.text.focus(); break; }
     case 'smart': smartCapture(); break;
+    case 'new-note': noteForm(null, el.dataset.section || (TABS.find(t => t.id === TAB) || {}).sections?.[0]); break;
+    case 'edit-note': noteForm((D.notes || []).find(n => n.id === id)); break;
+    case 'del-note': confirmBox('حذف هذه الملاحظة؟').then(ok => { if (!ok) return; closeModal(); save([{ op: 'delete', table: 'notes', id }], 'حُذفت'); }); break;
+    case 'note-filter': NOTE_FILTER = id; render(); break;
+    case 'notes-of': NOTE_FILTER = el.dataset.section; TAB = 'notes'; render(); window.scrollTo(0, 0); break;
     case 'new-agr': agreementForm(null, el.dataset.section || (TABS.find(t => t.id === TAB) || {}).sections?.[0]); break;
     case 'edit-agr': agreementForm(D.agreements.find(a => a.id === id)); break;
     case 'del-agr': deleteAgreement(id); break;
